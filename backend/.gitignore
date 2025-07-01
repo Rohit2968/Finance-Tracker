@@ -1,0 +1,18 @@
+# Node.js
+node_modules/
+.env
+package-lock.json
+
+# React/Vite
+dist/
+build/
+.vite/
+*.log
+*.cache
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
