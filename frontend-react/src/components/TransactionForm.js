@@ -1,115 +1,106 @@
-import React, { useState } from "react";
-import "./TransactionForm.css";
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const TransactionForm = () => {
-  const [formData, setFormData] = useState({
-    amount: "",
-    category: "",
-    description: "",
-    date: ""
-  });
+  const { token } = useAuth(); // ✅ Get token from context
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [date, setDate] = useState('');
 
-  const [errors, setErrors] = useState({
-    amount: "",
-    category: "",
-    description: "",
-    date: ""
-  });
-
-  const isValidDate = (dateString) => {
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-  };
-
-  const validateField = (name, value) => {
-    let error = "";
-    switch (name) {
-      case "amount":
-        if (!value) {
-          error = "Amount is required";
-        } else if (isNaN(value) || value <= 0) {
-          error = "Please enter a valid positive number";
-        }
-        break;
-      case "category":
-        if (!value) {
-          error = "Category is required";
-        }
-        break;
-      case "description":
-        if (!value) {
-          error = "Description is required";
-        }
-        break;
-      case "date":
-        if (!value) {
-          error = "Date is required";
-        } else if (!isValidDate(value)) {
-          error = "Please enter a valid date";
-        }
-        break;
-      default:
-        break;
+  // ✅ Form Validation
+  const formValidation = () => {
+    let isValid = true;
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount');
+      isValid = false;
     }
-    return error;
+    if (!category) {
+      alert('Please select a category');
+      isValid = false;
+    }
+    if (!description) {
+      alert('Please enter a description');
+      isValid = false;
+    }
+    if (!date) {
+      alert('Please select a date');
+      isValid = false;
+    }
+    return isValid;
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-    const error = validateField(name, value);
-    setErrors((prev) => ({
-      ...prev,
-      [name]: error
-    }));
-  };
-
-  const handleFormSubmit = (e) => {
+  // ✅ Form Submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = {};
-    Object.keys(formData).forEach((key) => {
-      newErrors[key] = validateField(key, formData[key]);
-    });
-    setErrors(newErrors);
-    const hasErrors = Object.values(newErrors).some((error) => error !== "");
-    if (hasErrors) {
-      alert("Please fill in all required fields correctly");
-      return;
+    if (!formValidation()) return;
+
+    const transactionData = {
+      amount,
+      category,
+      description,
+      date
+    };
+
+    try {
+      const response = await fetch('http://localhost:5000/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(transactionData)
+      });
+
+      if (!response.ok) throw new Error('Network error');
+
+      const data = await response.json();
+      console.log('Transaction added successfully:', data);
+
+      setAmount('');
+      setCategory('');
+      setDescription('');
+      setDate('');
+    } catch (error) {
+      console.error('Error adding transaction:', error.message);
+      alert('Something went wrong!');
     }
-    console.log("Form submitted:", formData);
-    // reset form
-    setFormData({ amount: "", category: "", description: "", date: "" });
   };
 
   return (
-    <form onSubmit={handleFormSubmit} className="transaction-form">
+    <form onSubmit={handleSubmit} className="transaction-form">
+      <h2>Add a Transaction</h2>
+
       <div className="form-group">
         <label htmlFor="amount">Amount:</label>
         <input
           type="number"
           id="amount"
-          name="amount"
-          value={formData.amount}
-          onChange={handleInputChange}
-          className={errors.amount ? "error" : ""}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          min="0"
+          step="0.01"
         />
-        {errors.amount && <span className="error-message">{errors.amount}</span>}
       </div>
 
       <div className="form-group">
         <label htmlFor="category">Category:</label>
-        <input
-          type="text"
+        <select
           id="category"
-          name="category"
-          value={formData.category}
-          onChange={handleInputChange}
-          className={errors.category ? "error" : ""}
-        />
-        {errors.category && <span className="error-message">{errors.category}</span>}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        >
+          <option value="">Select a category</option>
+          <option value="food">Food</option>
+          <option value="rent">Rent</option>
+          <option value="utilities">Utilities</option>
+          <option value="travel">Travel</option>
+          <option value="shopping">Shopping</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="other">Other</option>
+        </select>
       </div>
 
       <div className="form-group">
@@ -117,14 +108,11 @@ const TransactionForm = () => {
         <input
           type="text"
           id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          className={errors.description ? "error" : ""}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          maxLength="100"
         />
-        {errors.description && (
-          <span className="error-message">{errors.description}</span>
-        )}
       </div>
 
       <div className="form-group">
@@ -132,17 +120,13 @@ const TransactionForm = () => {
         <input
           type="date"
           id="date"
-          name="date"
-          value={formData.date}
-          onChange={handleInputChange}
-          className={errors.date ? "error" : ""}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
         />
-        {errors.date && <span className="error-message">{errors.date}</span>}
       </div>
 
-      <button type="submit" className="submit-button">
-        Add Transaction
-      </button>
+      <button type="submit" className="submit-button">Add Transaction</button>
     </form>
   );
 };
