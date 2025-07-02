@@ -46,4 +46,5 @@ export const AuthProvider = ({ children }) => {
 // ✅ THIS IS THE MISSING EXPORT
 export const useAuth = () => useContext(AuthContext);
 
+
 export default AuthContext;

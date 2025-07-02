@@ -1,16 +1,15 @@
-// src/components/ProtectedRoute.js
-import React, { useContext } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import AuthContext from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // ✅ Use named export
 
 const ProtectedRoute = ({ children }) => {
-  const { user, isLoading } = useContext(AuthContext);
+  const { token, isLoading } = useAuth(); // ✅ useAuth() returns token and loading
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!user) {
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
 
