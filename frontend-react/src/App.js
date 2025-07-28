@@ -11,8 +11,8 @@ import AuthInitializer from './components/AuthInitializer';
 function App() {
   return (
     <AuthProvider>
-      <AuthInitializer />
       <Router>
+        <AuthInitializer />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route 
@@ -25,6 +25,7 @@ function App() {
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<div>404 - Page Not Found</div>} />
         </Routes>
       </Router>
     </AuthProvider>

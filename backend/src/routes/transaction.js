@@ -1,25 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const authenticateToken = require('../middleware/authMiddleware');
-const Transaction = require('../models/transaction.model');
+const Transaction = require('../models/Transaction');
+const User = require('../models/user.model'); 
+const authenticateToken = require('../middleware/auth');
 
-router.post('/transactions', authenticateToken, async (req, res) => {
+// POST /api/transactions
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { amount, category, description, date } = req.body;
+    const user = await User.findById(req.user.id);
 
     const transaction = new Transaction({
       amount,
       category,
       description,
       date,
-      userId: req.user.userId, // added by the middleware
+      user: user._id
     });
 
-    const savedTransaction = await transaction.save();
-    res.status(200).json({ message: 'Transaction saved successfully', transaction: savedTransaction });
-  } catch (error) {
-    console.error('Error saving transaction:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    await transaction.save();
+    res.status(201).json(transaction);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating transaction' });
+  }
+});
+
+// GET /api/transactions/categories
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Transaction.find().distinct('category');
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching categories' });
   }
 });
 

@@ -1,116 +1,142 @@
-import React, { useState, useContext } from 'react';
-
-// Replace with your actual AuthContext if you’re using context for auth
-// import { AuthContext } from '../context/AuthProvider';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './TransactionForm.css';
 
 const TransactionForm = () => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  
-  // Dummy token/userId for now — replace with actual context or props
-  const token = 'your-auth-token';
-  const userId = 'your-user-id';
+  const [categories, setCategories] = useState([]);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const formValidation = () => {
-    let isValid = true;
+  const token = localStorage.getItem('token');
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/transactions/categories');
+        setCategories(res.data);
+      } catch {
+        setError('Could not load categories');
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
 
     if (!amount || amount <= 0) {
-      alert('Please enter a valid amount');
-      isValid = false;
+      setError('Please enter a valid amount');
+      return;
     }
 
     if (!category) {
-      alert('Please select a category');
-      isValid = false;
+      setError('Please select a category');
+      return;
     }
 
-    if (!description) {
-      alert('Please enter a description');
-      isValid = false;
+    if (!description.trim()) {
+      setError('Please enter a description');
+      return;
     }
 
     if (!date) {
-      alert('Please select a date');
-      isValid = false;
+      setError('Please select a date');
+      return;
     }
 
-    return isValid;
-  };
+    try {
+      await axios.post(
+        'http://localhost:5000/api/transactions',
+        { amount, category, description, date },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!formValidation()) return;
-
-    const transactionData = {
-      amount,
-      category,
-      description,
-      date,
-      userId,
-    };
-
-    fetch('http://localhost:5000/api/transactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token,
-      },
-      body: JSON.stringify(transactionData),
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error('Failed to save transaction');
-        return response.json();
-      })
-      .then((data) => {
-        console.log('Transaction added:', data);
-        setAmount('');
-        setCategory('');
-        setDescription('');
-        setDate('');
-      })
-      .catch((error) => {
-        console.error('Error adding transaction:', error);
-      });
+      setAmount('');
+      setCategory('');
+      setDescription('');
+      setDate('');
+      setSuccessMsg('Transaction added successfully!');
+    } catch {
+      setError('Failed to create transaction');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="transaction-form">
-      <h2>Add New Transaction</h2>
+    <div className="form-container">
+      <h2 className="form-title">Add New Transaction</h2>
 
-      <input
-        type="number"
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <div>
+            <label className="form-label">Amount</label>
+            <input
+              type="number"
+              className="form-input"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
 
-      <input
-        type="text"
-        placeholder="Category"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-      />
+          <div>
+            <label className="form-label">Category</label>
+            <select
+              className="form-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      <input
-        type="text"
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
+        <div className="form-group">
+          <div>
+            <label className="form-label">Description</label>
+            <input
+              type="text"
+              className="form-input"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
+          <div>
+            <label className="form-label">Date</label>
+            <input
+              type="date"
+              className="form-input"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+        </div>
 
-      <button type="submit" className="submit-button">
-        Add Transaction
-      </button>
-    </form>
+        {error && <div className="error">{error}</div>}
+        {successMsg && <div className="success">{successMsg}</div>}
+
+        <button type="submit" className="submit-button">
+          Add Transaction
+        </button>
+      </form>
+    </div>
   );
 };
 
