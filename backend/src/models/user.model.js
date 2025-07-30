@@ -33,7 +33,20 @@ const userSchema = new mongoose.Schema({
     trasactions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Transaction'
-    }]
+    }],
+    status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 // Pre-save hook to hash password
@@ -55,6 +68,17 @@ userSchema.statics.findByCredentials = async function(email, password) {
     throw new Error('Invalid email or password');
   }
   return user;
+};
+
+// Auto-update updatedAt before update
+userSchema.pre('updateOne', function (next) {
+  this.set({ updatedAt: new Date() });
+  next();
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 const User = mongoose.model('User', userSchema);
